@@ -40,7 +40,9 @@ body{
 a{color: #b8860b; text-decoration:none;}
 a.current{color: #52739e;}
 a.current:hover{color: #e82945;}
-a:hover{color: #b2132e;}
+a:hover{color: #b2132e;
+        font-size: 1.1em; /* By using 1em, it will inherit the font size from its parent */
+        font-weight: bold;}
 a:active{color: #e82945;}
 h1,h2,h3,h4{clear:left; color: #813c54; margin:1.5em 0em 1em 0em; font-family:'Roboto Slab',serif; text-shadow: 1px 1px 2px #d0d0d0;}
 h1{font-size:2.67em;}
@@ -142,7 +144,20 @@ footer{font-size:0.875em; margin-top:12em; text-align:center;}
   margin: auto; /* Center the table horizontally */
   background-color: #7bcae5; /* Light blue background */
 }
-
+.sideprojects tr.intro{
+  border-collapse: collapse;
+  width: 100%; /* Increase table width */
+  max-width: 800px; /* Adjust maximum width as needed */
+  margin: auto; /* Center the table horizontally */
+  background-color: #6dca9f; /* Light blue background */
+}
+.sideprojects tr.java{
+  border-collapse: collapse;
+  width: 100%; /* Increase table width */
+  max-width: 800px; /* Adjust maximum width as needed */
+  margin: auto; /* Center the table horizontally */
+  background-color: #c0b5b5; /* Light blue background */
+}
 .sideprojects th {
   text-align: left;
   padding: 5px; /* Adjust padding to make cell more compact */
