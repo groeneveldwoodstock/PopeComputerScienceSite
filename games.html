@@ -6,17 +6,30 @@
     <link rel="shortcut icon" type="image/png" href="assets/favicon.png"/>
     <link rel="stylesheet" type="text/css" media="all" href="assets/main.css"/>
     <title>Games</title>
+    <style>
+        /* CSS styles for the layout */
+        .game-info {
+            width: 600px;/* Adjust width as needed */
+            font-size: 16px;
+            vertical-align: top;
+        }
+
+        #snakeCanvas {
+            border: 1px solid #d3d3d3;
+            vertical-align: top;
+        }
+    </style>
 </head>
 
 <body>
 
     <div class="banner">
-        <img src="assets/banner.jpg" alt="Conference Template Banner">
+        <img src="assets/gamesbanner.png" alt="Games Banner">
         <div class="top-left">
             <span class="title1">Pope</span><span class="title2">Computer Science</span> <span class="year"></span>
         </div>
         <div class="bottom-right">
-             <br> Pope High School Computer Science
+             <br> Games
         </div>
     </div>
 
@@ -40,40 +53,138 @@
         </tr>
     </table>
 
-    <h2>Welcome to Pope Computer Science</h2>
-    <p>
-      This site was designed to explain the computer science course offerings at Pope High School.
-      Select a course above for a description of the course and the current calendars. All work done in class is posted on the calendar for that course. Links to calendars are posted below the course name (click the name for a description of the class). Most calendar links require access to the <a target="_blank" href="https://codehs.com/">CodeHS</a> platform and enrollment in the course. Parents can use the calendar to see what was assigned on a given day. Students can access their assignments through the calendar. 
-      
-    </p>
-    <ul>
-      <li>Mr. Groeneveld</li>
-      <li>Pope High School Computer Science</li>         <li>richard.groeneveld@cobbk12.org</li>
-    </ul>
-
-    <h2>More Links</h2>
-    <p>
-        The links below will take you to pages that are not course specific. These will allow you to explore other computer science and coding topics. 
-    </p>
-    <table class="sponsors">
+    <table>
         <tr>
-            <td class="sponsor">
-                <a href="games.html">
-                    <img src="assets/games.jpg" alt="Games">
-                </a>
+            <td>
+                <div class="game-info">
+                    <p>Snake game on the left: <a target="_blank" href="https://replit.com/@RichardGroeneve/Snake#index.html">Link to Code</a></p>
+                    <p>Underground Adventure: Written in Kaboom JavaScript,<br>
+                      <a target="_blank" href="https://groeneveldwoodstock.github.io/Underground-Adventure/">Try Underground Adventure!</a></p>
+                    <p>Clyde Platformer: Written in Kaboom JavaScript,<br>
+                      <a target="_blank" href="https://groeneveldwoodstock.github.io/Clyde-Platformer/">Try Clyde Platformer!</a></p>
+                    <p>Adventurer: Written in Kaboom JavaScript,<br>
+                      <a target="_blank" href="https://groeneveldwoodstock.github.io/Adventure-Game-1/">Try Adventurer!</a></p>
+                    <p>Save The Planet: Written in Kaboom JavaScript,<br>
+                      <a target="_blank" target="https://groeneveld.itch.io/save-the-planet">Try Save the Planet!</a></p>
+                    <p>Here is a Tetris Game Written in JavaScript and HTML<br>
+                    <a href="tetris.html">Play Tetris</a></p>
+                    
+                </div>
             </td>
-            <td class="sponsor">
-                <a href="sideproject.html">
-                    <img src="assets/sideproject.jpg" alt="Side Project Ideas" style="width: 80%">
-                </a>
-            </td>
-            <td class="sponsor">
-                <a href="resources.html">
-                    <img src="assets/resources.png" alt="Other Resources">
-                </a>
+            <td>
+                <canvas id="snakeCanvas" width="400" height="400">
+                //written by Richard Groeneveld 10/10/2020
+                </canvas>
+                <script>
+                    window.onload = function() {
+                        canv = document.getElementById("snakeCanvas");
+                        ctx = canv.getContext("2d");
+                        document.addEventListener("keydown", keyPush);
+                        setInterval(game, 1000 / 10);
+
+                        // Add this part to disable arrow key scrolling
+                        window.addEventListener("keydown", function(event) {
+                            if ([37, 38, 39, 40].includes(event.keyCode)) {
+                                event.preventDefault();
+                            }
+                        });
+                    }
+
+                    px = py = 10;
+                    gs = tc = 20;
+                    ax = ay = 15;
+                    xv = yv = 0;
+                    trail = [];
+                    tail = 2;
+                    longesttail = 0;
+
+                    function game() {
+                        px += xv;
+                        py += yv;
+                        if (px < 0) {
+                            px = tc - 1;
+                        }
+                        if (px > tc - 1) {
+                            px = 0;
+                        }
+                        if (py < 0) {
+                            py = tc - 1;
+                        }
+                        if (py > tc - 1) {
+                            py = 0;
+                        }
+                        ctx.fillStyle = "blue";
+                        ctx.fillRect(0, 0, canv.width, canv.height);
+                        ctx.fillStyle = "lime";
+                        for (var i = 0; i < trail.length; i++) {
+                            ctx.fillRect(trail[i].x * gs, trail[i].y * gs, gs - 2, gs - 2);
+                            if (trail[i].x == px && trail[i].y == py) {
+                                tail = 2;
+                            }
+                        }
+                        trail.push({ x: px, y: py });
+                        while (trail.length > tail) {
+                            trail.shift();
+                        }
+                        ctx.fillStyle = "white";
+                        ctx.font = "20px Arial";
+                        ctx.fillText("Snake Tail = " + tail, 20, 20);
+                        ctx.fillText("Longest Tail = " + longesttail, 20, 50);
+                        ctx.fillText("Use Arrow Keys", 20, 380);
+                        if (ax == px && ay == py) {
+                            tail++;
+                            ax = Math.floor(Math.random() * tc);
+                            ay = Math.floor(Math.random() * tc);
+                        }
+                        if (tail > longesttail) {
+                            longesttail = tail;
+                        }
+                        ctx.fillStyle = "red";
+                        ctx.fillRect(ax * gs, ay * gs, gs - 2, gs - 2);
+                    }
+
+                    function keyPush(evt) {
+                        switch (evt.keyCode) {
+                            case 37:
+                                xv = -1;
+                                yv = 0;
+                                break;
+                            case 38:
+                                xv = 0;
+                                yv = -1;
+                                break;
+                            case 39:
+                                xv = 1;
+                                yv = 0;
+                                break;
+                            case 40:
+                                xv = 0;
+                                yv = 1;
+                                break;
+                        }
+                    }
+                </script>
             </td>
         </tr>
     </table>
+  <h2>More Links</h2>
+  <p>
+      The links below will take you to pages that are not course specific. These will allow you to explore other computer science and coding topics. 
+  </p>
+  <table class="sponsors">
+      <tr>
+          <td class="sponsor">
+              <a href="sideproject.html">
+                  <img src="assets/sideproject.jpg" alt="Side Project Ideas" style="width: 80%">
+              </a>
+          </td>
+          <td class="sponsor">
+              <a href="resources.html">
+                  <img src="assets/resources.png" alt="Other Resources">
+              </a>
+          </td>
+      </tr>
+  </table>
 
     <footer>
         &copy; Pope Computer Science
@@ -82,4 +193,3 @@
 
 </body>
 </html>
-
