@@ -271,3 +271,12 @@ footer{font-size:0.875em; margin-top:12em; text-align:center;}
   font-size: 18px; /* Increase font size on hover */
   color: #9c076d;
 }
+
+.app-image {
+    width: 20%;
+    transition: width 0.3s ease; /* Adding a smooth transition effect */
+}
+
+.app-image:hover {
+    width: 25%; /* Increase the width on hover */
+}
