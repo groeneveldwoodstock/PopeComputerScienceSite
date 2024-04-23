@@ -165,11 +165,30 @@ th,td{
 .year{color: #505050; font-size:0.67em; font-weight: lighter;}
 
 /* Navigation Links (Home, Registration, etc) */
-table.navigation{width:800px;}
-td.navigation{font-size:1.67em; white-space:nowrap; width:20%; text-align:center; vertical-align:middle; padding:0px 0px 0px 0px;}
+table.navigation {
+    width: 100%;
+}
+
+td.navigation {
+    font-size: 1.67em;
+    white-space: nowrap;
+    width: 20%;
+    vertical-align: middle;
+    padding: 0px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: black;
+    text-align: center;
+}
 
 
-table.sponsors{width:800px;}
+/* Highlight on hover */
+td.navigation:hover {
+    background-color: #c7bdbd; /* Change the background color on hover */
+}
+
+
+table.sponsors{width:100%;}
 td.sponsor{white-space:nowrap; width:33%; text-align:center; vertical-align:middle; padding:0px 0px 0px 0px;}
 td.sponsor img{max-width: 200px}
 
