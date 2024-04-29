@@ -23,7 +23,13 @@
     padding:0;
     vertical-align:baseline;
 }
-
+img {
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 768px) {
+  /* CSS adjustments for smaller screens */
+}
 body{
     background-color: #fafafa;
     background-size: cover;
@@ -167,6 +173,13 @@ th,td{
 /* Navigation Links (Home, Registration, etc) */
 table.navigation {
     width: 100%;
+}
+.navigation {
+    cursor: pointer; /* Change cursor to pointer on hover */
+}
+.navigation:hover {
+    color: red; /* Text color turns red on hover */
+    font-size: 1.2em; /* Text grows slightly on hover */
 }
 
 td.navigation {
