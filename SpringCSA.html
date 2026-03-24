@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Weekday Schedule</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        :root { 
+            --bg: #f8fafc; 
+            --text: #1e293b;
+            /* Monthly color rotation */
+            --color-1: #2563eb; --color-2: #059669; --color-3: #d97706; --color-4: #7c3aed;
+        }
+        
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; }
+        .month-section { max-width: 1100px; margin: 40px auto; }
+        .month-title { 
+            font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; 
+            padding-left: 10px; border-left: 5px solid var(--accent);
+        }
+
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 1rem; 
+            margin-bottom: 2rem;
+        }
+        
+        .header { 
+            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
+            letter-spacing: 1px; text-align: center; padding: 10px; color: #64748b;
+            background: #5e6e7e;border-radius: 4px;color: white
+        }
+        
+
+        .day-box { 
+            background: white; border-radius: 12px; padding: 1.25rem; min-height: 100px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            border-top: 5px solid var(--accent);
+            transition: transform 0.2s;
+        }
+        
+        .date-label { font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-bottom: 0.5rem; }
+        .activity-name { font-size: 0.95rem; font-weight: 500; line-height: 1.4; }
+        
+        .error-msg { background: #fee2e2; color: #b91c1c; padding: 1rem; border-radius: 8px; text-align: center; }
+        .activity-name {
+            line-height: 1.4;
+            word-wrap: break-word; /* Ensures long links don't break the layout */
+            /* Avoid 'height' or 'overflow: hidden' if you want to see all lines */
+        }
+        
+        /* Optional: Style the links so they aren't default purple/blue */
+        .activity-name a {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+        .today-highlight {
+            border: 3px solid var(--accent) !important;
+            background-color: rgba(0, 0, 0, 0.05); /* Light tint */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            transform: scale(1.02);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .today-highlight::after {
+            content: 'TODAY';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--accent);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width:50px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <h1 style="text-align: center; margin-bottom: 0;">AP Computer Science A Spring Calendar</h1>
+    <div id="loading">
+        <img src="Loading.gif" alt="Computer man" style="width:48px;height:48px;">
+    </div>
+    <div id="calendar-workspace">
+        </div>
+</div>
+
+<script>
+    //THIS IS THE LINK TO THE GOOGLE SHEET API, It
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyrLpH6H8yF4UN6C-Dt52_eCaRolsjniMmelPQ_GwNJxpuhDpTcmSyBckdo8G3YLyax8Q/exec';
+    const MONTH_COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#4b5563'];
+
+    async function fetchData() {
+        try {
+            const response = await fetch(API_URL);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            // console.log("Data received:", data); // Check your console to see if data arrives
+            if (data.length > 0) processData(data);
+            
+        } catch (error) {
+            console.error("Detailed Error:", error);
+            // This will help distinguish between a block and a typo
+            if (error.message.includes('Failed to fetch')) {
+                console.warn("Check if your Deployment is set to 'Anyone' and that you are using the LATEST URL.");
+            }
+        }
+    }
+
+    function isWeekday(date) {
+        const d = date.getDay();
+        return d !== 0 && d !== 6;
+    }
+
+    function createNewMonthSection(date, colorIndex) {
+        const workspace = document.getElementById('calendar-workspace');
+        const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const accentColor = MONTH_COLORS[colorIndex % MONTH_COLORS.length];
+
+        const section = document.createElement('div');
+        section.className = 'month-section';
+        section.style.setProperty('--accent', accentColor);
+        
+        section.innerHTML = `
+            <div class="month-title">${monthName}</div>
+            <div class="calendar-grid">
+                <div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div>
+                <div class="header">Thu</div><div class="header">Fri</div>
+            </div>
+        `;
+        
+        workspace.appendChild(section);
+        return section.querySelector('.calendar-grid');
+    }
+
+    function processData(rows) {
+        //0, 100,200 etc
+        let startRow = 0;
+        let endRow = startRow + 100;
+        // 1. Get the Start Date from the sheet (Row 1, Column B)
+        console.log()
+        let startDateInput = rows[startRow][1];
+        let currentDate = startDateInput ? new Date(startDateInput) : new Date();
+        
+        // Fix potential timezone shift from Google Sheets
+        currentDate.setMinutes(currentDate.getMinutes() + currentDate.getTimezoneOffset());
+        
+        // 2. Define "Today" for the highlight logic
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+    
+        // Push to first weekday if starting on a weekend
+        while (!isWeekday(currentDate)) { 
+            currentDate.setDate(currentDate.getDate() + 1); 
+        }
+    
+        let currentMonth = -1;
+        let colorCounter = 0;
+        let activeGrid = null;
+    
+        // Loop through activities (Row 1 onwards)
+        for (let i = startRow; i < endRow; i++) {
+            const activityHtml = rows[i][0];
+            if (!activityHtml || activityHtml.trim() === "") continue;
+    
+            // Detect Month Change logic
+            if ((currentDate.getMonth() !== currentMonth)) {
+                currentMonth = currentDate.getMonth();
+                activeGrid = createNewMonthSection(currentDate, colorCounter);
+                colorCounter++;
+                
+                const startDay = currentDate.getDay(); 
+                for (let s = 1; s < startDay; s++) {
+                    activeGrid.appendChild(document.createElement('div'));
+                }
+            }
+    
+            const box = document.createElement('div');
+            box.className = 'day-box';
+    
+            // --- NEW: HIGHLIGHT TODAY LOGIC ---
+            const compareDate = new Date(currentDate);
+            compareDate.setHours(0, 0, 0, 0);
+    
+            if (compareDate.getTime() === today.getTime()) {
+                box.classList.add('today-highlight'); // For CSS styling
+                box.id = 'scroll-to-today';           // For the auto-scroll anchor
+            }
+            // ----------------------------------
+    
+            const formattedDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            // Using innerHTML to render the <br> and <a> tags from Apps Script
+            box.innerHTML = `
+                <div class="date-label">${formattedDate}</div>
+                <div class="activity-name">${activityHtml}</div>
+            `;
+            
+            if(activeGrid) activeGrid.appendChild(box);
+    
+            // Move to next weekday
+            do {
+                currentDate.setDate(currentDate.getDate() + 1);
+            } while (!isWeekday(currentDate));
+            
+            //remove Loading wheel
+            document.getElementById('loading').innerHTML = "";
+        }
+    
+        // --- NEW: AUTO-SCROLL LOGIC ---
+        // Wait briefly for the grid to finish rendering before scrolling
+        setTimeout(() => {
+            
+            const todayElement = document.getElementById('scroll-to-today');
+            if (todayElement) {
+                todayElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }, 500); 
+    }
+
+    fetchData();
+</script>
+</body>
+</html>
