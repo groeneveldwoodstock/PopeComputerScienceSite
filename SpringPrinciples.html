@@ -76,13 +76,35 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+        img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width:50px;
+        }
+
+        .padding-day {
+            opacity: 0.75;
+            filter: grayscale(0.5);
+            background-color: #f1f5f9 !important; /* Light grey background */
+            border-top: 5px solid #cbd5e1 !important; /* Muted border */
+        }
+        
+        .padding-day:hover {
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
 
 <div id="app">
     <h1 style="text-align: center; margin-bottom: 0;">AP Computer Science Principles Spring Calendar</h1>
-    <div id="calendar-workspace"></div>
+    <div id="loading">
+        <img src="Loading.gif" alt="Computer man">
+    </div>
+    <div id="calendar-workspace">
+        </div>
 </div>
 
 <script>
@@ -138,87 +160,111 @@
     }
 
     function processData(rows) {
-        //0, 100,200 etc
-        let startRow = 0;
-        let endRow = startRow + 100;
-        // 1. Get the Start Date from the sheet (Row 1, Column B)
-        console.log()
-        let startDateInput = rows[startRow][1];
+        const workspace = document.getElementById('calendar-workspace');
+        workspace.innerHTML = ''; // Clear previous content
+        
+        let startDateInput = rows[0][1];
         let currentDate = startDateInput ? new Date(startDateInput) : new Date();
-        
-        // Fix potential timezone shift from Google Sheets
         currentDate.setMinutes(currentDate.getMinutes() + currentDate.getTimezoneOffset());
-        
-        // 2. Define "Today" for the highlight logic
+    
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+        today.setHours(0, 0, 0, 0);
     
-        // Push to first weekday if starting on a weekend
-        while (!isWeekday(currentDate)) { 
-            currentDate.setDate(currentDate.getDate() + 1); 
-        }
-    
-        let currentMonth = -1;
-        let colorCounter = 0;
-        let activeGrid = null;
-    
-        // Loop through activities (Row 1 onwards)
-        for (let i = startRow; i < endRow; i++) {
+        // 1. Create a full list of all activity objects with their calculated dates
+        const allDays = [];
+        for (let i = 0; i < rows.length; i++) {
             const activityHtml = rows[i][0];
             if (!activityHtml || activityHtml.trim() === "") continue;
     
-            // Detect Month Change logic
-            if ((currentDate.getMonth() !== currentMonth)) {
-                currentMonth = currentDate.getMonth();
-                activeGrid = createNewMonthSection(currentDate, colorCounter);
-                colorCounter++;
-                
-                const startDay = currentDate.getDay(); 
-                for (let s = 1; s < startDay; s++) {
-                    activeGrid.appendChild(document.createElement('div'));
-                }
-            }
-    
-            const box = document.createElement('div');
-            box.className = 'day-box';
-    
-            // --- NEW: HIGHLIGHT TODAY LOGIC ---
-            const compareDate = new Date(currentDate);
-            compareDate.setHours(0, 0, 0, 0);
-    
-            if (compareDate.getTime() === today.getTime()) {
-                box.classList.add('today-highlight'); // For CSS styling
-                box.id = 'scroll-to-today';           // For the auto-scroll anchor
-            }
-            // ----------------------------------
-    
-            const formattedDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
-            // Using innerHTML to render the <br> and <a> tags from Apps Script
-            box.innerHTML = `
-                <div class="date-label">${formattedDate}</div>
-                <div class="activity-name">${activityHtml}</div>
-            `;
-            
-            if(activeGrid) activeGrid.appendChild(box);
-    
-            // Move to next weekday
-            do {
+            while (!isWeekday(currentDate)) {
                 currentDate.setDate(currentDate.getDate() + 1);
-            } while (!isWeekday(currentDate));
+            }
+    
+            allDays.push({
+                date: new Date(currentDate),
+                content: activityHtml,
+                isToday: new Date(currentDate).setHours(0,0,0,0) === today.getTime()
+            });
+    
+            currentDate.setDate(currentDate.getDate() + 1);
         }
     
-        // --- NEW: AUTO-SCROLL LOGIC ---
-        // Wait briefly for the grid to finish rendering before scrolling
+        // 2. Group these days by Month
+        const months = {};
+        allDays.forEach(day => {
+            const monthKey = day.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+            if (!months[monthKey]) months[monthKey] = [];
+            months[monthKey].push(day);
+        });
+    
+        // 3. Render each month
+        let colorCounter = 0;
+        const monthKeys = Object.keys(months);
+    
+        monthKeys.forEach((monthKey, index) => {
+            const monthDays = months[monthKey];
+            const accentColor = MONTH_COLORS[colorCounter % MONTH_COLORS.length];
+            colorCounter++;
+    
+            const section = document.createElement('div');
+            section.className = 'month-section';
+            section.style.setProperty('--accent', accentColor);
+            section.innerHTML = `
+                <div class="month-title">${monthKey}</div>
+                <div class="calendar-grid">
+                    <div class="header">Mon</div><div class="header">Tue</div><div class="header">Wed</div>
+                    <div class="header">Thu</div><div class="header">Fri</div>
+                </div>
+            `;
+            const grid = section.querySelector('.calendar-grid');
+    
+            // --- FILL START (Previous Month's Days) ---
+            const firstDayOfMonth = monthDays[0].date.getDay(); // 1 (Mon) to 5 (Fri)
+            if (firstDayOfMonth > 1) {
+                const prevMonthDays = months[monthKeys[index - 1]] || [];
+                // Take the last few days from the previous month's array
+                const paddingDays = prevMonthDays.slice(-(firstDayOfMonth - 1));
+                paddingDays.forEach(d => grid.appendChild(createDayBox(d, true)));
+            }
+    
+            // --- FILL CURRENT MONTH ---
+            monthDays.forEach(d => grid.appendChild(createDayBox(d, false)));
+    
+            // --- FILL END (Next Month's Days) ---
+            const lastDayOfMonth = monthDays[monthDays.length - 1].date.getDay();
+            if (lastDayOfMonth < 5) {
+                const nextMonthDays = months[monthKeys[index + 1]] || [];
+                const paddingDays = nextMonthDays.slice(0, 5 - lastDayOfMonth);
+                paddingDays.forEach(d => grid.appendChild(createDayBox(d, true)));
+            }
+    
+            workspace.appendChild(section);
+        });
+    
+        document.getElementById('loading').innerHTML = "";
+        
+        // Auto-scroll logic
         setTimeout(() => {
             const todayElement = document.getElementById('scroll-to-today');
-            if (todayElement) {
-                todayElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-            }
-        }, 500); 
+            if (todayElement) todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
+    }
+    
+    // Helper function to build the HTML for a single day box
+    function createDayBox(dayObj, isPadding) {
+        const box = document.createElement('div');
+        box.className = 'day-box' + (isPadding ? ' padding-day' : '');
+        if (dayObj.isToday && !isPadding) {
+            box.classList.add('today-highlight');
+            box.id = 'scroll-to-today';
+        }
+    
+        const formattedDate = dayObj.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        box.innerHTML = `
+            <div class="date-label">${formattedDate}</div>
+            <div class="activity-name">${dayObj.content}</div>
+        `;
+        return box;
     }
 
     fetchData();
