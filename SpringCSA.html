@@ -155,7 +155,7 @@
         }
         /* Replace or add to your existing styles */
         .nav-btn, .theme-toggle-btn {
-            padding: 10px 18px;
+            padding: 10px 10px;
             border-radius: 99px;
             border: none;
             background: var(--text);
@@ -173,12 +173,32 @@
         
         /* Ensure the container stays top right */
         .button-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+            display: flex; 
             gap: 10px;
+            
+        }
+        .button-container2 {
+            position: fixed; 
+            top: 20px; 
+            left: 20px; 
+            z-index: 1000; 
+            display: flex; 
+            gap: 10px;
+            
+        }
+        body.dark-mode .day-box {
+            /* Keeps the color but prevents it from being "neon" on dark backgrounds */
+            filter: saturate(0.9) brightness(1.1);
+        }
+        
+        body.dark-mode .today-highlight {
+            /* Ensure the "Today" glow is visible but soft */
+            box-shadow: 0 0 20px var(--accent);
+            background-color: rgba(255, 255, 255, 0.03);
         }
     </style>
 </head>
@@ -187,10 +207,11 @@
     <div id="app">
         <h1 style="text-align: center; margin-bottom: 0;">AP Computer Science A Spring Calendar</h1>
         
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
-            <button class="nav-btn" onclick="scrollToToday()">📅</button>
-            <br>
-            <button class="theme-toggle-btn" onclick="toggleDarkMode()">🌓</button>
+        <div class="button-container">
+            <button class="theme-toggle-btn" style="right: 20px" onclick="toggleDarkMode()">🌓</button>
+        </div>
+        <div class="button-container2">
+            <button class="nav-btn" style="left: 20px" onclick="scrollToToday()">📅</button>
         </div>
     
         <div id="loading">
@@ -201,8 +222,23 @@
 
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyrLpH6H8yF4UN6C-Dt52_eCaRolsjniMmelPQ_GwNJxpuhDpTcmSyBckdo8G3YLyax8Q/exec';
-    const MONTH_COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#4b5563'];
-    const TEST_COLOR = '#FF0000'; 
+    const UNIT_COLORS = [
+        '#2563eb', // Blue
+        '#059669', // Emerald
+        '#d97706', // Amber
+        '#7c3aed', // Violet
+        '#db2777', // Pink
+        '#0d9488', // Teal (New)
+        '#ea580c', // Orange (New)
+        '#4f46e5', // Indigo (New)
+        '#0891b2', // Cyan
+        '#e11d48', // Rose
+        '#65a30d', // Lime
+        '#9333ea', // Purple
+        '#0284c7', // Sky Blue
+        '#be185d', // Deep Pink
+        '#334155'  // Slate Blue (Replaced Grey)
+    ];
 
     // Apply theme on load
     if (localStorage.getItem('calendar-theme') === 'dark') {
@@ -258,7 +294,7 @@
         const d = date.getDay();
         return d !== 0 && d !== 6;
     }
-
+    
     function processData(rows) {
         const workspace = document.getElementById('calendar-workspace');
         workspace.innerHTML = ''; 
@@ -270,10 +306,31 @@
         const today = new Date();
         today.setHours(0, 0, 0, 0);
     
+        // --- LOGIC SETUP ---
+        const unitColorMap = {}; 
+        let colorPaletteIndex = 0;
+        
+        // Fallback if the very first row is empty
+        let currentAccentColor = '#4b5563'; 
+        
         const allDays = [];
+    
         for (let i = 0; i < rows.length; i++) {
-            const activityHtml = rows[i][0];
+            const activityHtml = rows[i][0]; // Column A
+            const unitName = rows[i][2] ? rows[i][2].trim() : ""; // Column C
+            
             if (!activityHtml || activityHtml.trim() === "") continue;
+    
+            // 1. If Column C has a Unit Name, update the "sticky" color
+            if (unitName !== "") {
+                // Check if we've seen this unit before to reuse the color
+                if (!unitColorMap[unitName]) {
+                    unitColorMap[unitName] = UNIT_COLORS[colorPaletteIndex % UNIT_COLORS.length];
+                    colorPaletteIndex++;
+                }
+                currentAccentColor = unitColorMap[unitName];
+            } 
+            // 2. If unitName is blank, currentAccentColor stays the same as the previous row
     
             while (!isWeekday(currentDate)) {
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -282,12 +339,13 @@
             allDays.push({
                 date: new Date(currentDate),
                 content: activityHtml,
+                accent: currentAccentColor, // Assign the sticky color
                 isToday: new Date(currentDate).setHours(0,0,0,0) === today.getTime()
             });
     
             currentDate.setDate(currentDate.getDate() + 1);
         }
-    
+        // 2. Group by months for display purposes
         const months = {};
         allDays.forEach(day => {
             const monthKey = day.date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -295,17 +353,16 @@
             months[monthKey].push(day);
         });
     
-        let colorCounter = 0;
         const monthKeys = Object.keys(months);
     
         monthKeys.forEach((monthKey, index) => {
             const monthDays = months[monthKey];
-            const accentColor = MONTH_COLORS[colorCounter % MONTH_COLORS.length];
-            colorCounter++;
-    
+            
             const section = document.createElement('div');
             section.className = 'month-section';
-            section.style.setProperty('--accent', accentColor);
+            // We no longer set a single --accent for the whole section 
+            // because a month might contain two different units (two different colors)
+            
             section.innerHTML = `
                 <div class="month-title">${monthKey}</div>
                 <div class="calendar-grid">
@@ -315,6 +372,7 @@
             `;
             const grid = section.querySelector('.calendar-grid');
     
+            // Padding logic
             const firstDayOfMonth = monthDays[0].date.getDay(); 
             if (firstDayOfMonth > 1) {
                 const prevMonthDays = months[monthKeys[index - 1]] || [];
@@ -341,7 +399,36 @@
             if (todayElement) todayElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 500);
     }
-
+    
+    // 3. Update createDayBox to use the day's specific accent color
+    function createDayBox(dayObj, isPadding) {
+        const box = document.createElement('div');
+        box.className = 'day-box' + (isPadding ? ' padding-day' : '');
+        
+        // Apply the unique unit color to this specific box
+        box.style.setProperty('--accent', dayObj.accent);
+    
+        if (dayObj.isToday && !isPadding) {
+            box.classList.add('today-highlight');
+            box.id = 'scroll-to-today';
+        }
+    
+        let content = dayObj.content;
+        const testColor = '#ef4444'; 
+    
+        if (content.includes("TEST")) {
+            content = content.replace(/TEST/gi, (match) => 
+                `<span style="color: ${testColor}; font-weight: 800;">${match}</span>`
+            );
+        }
+    
+        const formattedDate = dayObj.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        box.innerHTML = `
+            <div class="date-label" style="color: var(--accent)">${formattedDate}</div>
+            <div class="activity-name">${content}</div>
+        `;
+        return box;
+    }
     // 1. Dark Mode Logic
     function toggleDarkMode() {
         document.body.classList.toggle('dark-mode');
@@ -354,38 +441,6 @@
         document.body.classList.add('dark-mode');
     }
     
-    // 2. Modified createDayBox to highlight "TEST"
-    function createDayBox(dayObj, isPadding) {
-        const box = document.createElement('div');
-        box.className = 'day-box' + (isPadding ? ' padding-day' : '');
-        
-        if (dayObj.isToday && !isPadding) {
-            box.classList.add('today-highlight');
-            box.id = 'scroll-to-today';
-        }
-    
-        let content = dayObj.content;
-        const testColor = '#ef4444'; // Red-500
-    
-        // Check for "TEST" (case-sensitive)
-        if (content.includes("TEST")) {
-            // Highlight the whole box border red instead of the accent color
-            // box.style.borderTopColor = testColor;
-            // box.style.boxShadow = `0 0 10px rgba(239, 68, 68, 0.2)`;
-            
-            // Wrap the word TEST in a red bold span
-            content = content.replace(/TEST/gi, (match) => 
-                `<span style="color: ${testColor}; font-weight: 800;">${match}</span>`
-            );
-        }
-    
-        const formattedDate = dayObj.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        box.innerHTML = `
-            <div class="date-label">${formattedDate}</div>
-            <div class="activity-name">${content}</div>
-        `;
-        return box;
-    }
     function scrollToToday() {
         const todayElement = document.getElementById('scroll-to-today');
         if (todayElement) {
