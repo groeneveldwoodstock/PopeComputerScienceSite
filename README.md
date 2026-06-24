@@ -1,4 +1,4 @@
 Pope Computer Science Website!
 
 2026 Updates:
-Summer Update Tesy
+Summer Updates: Fix Caching for each calander page & remove old calendar links
