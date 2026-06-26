@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CSA Spring Calendar</title>
+    <title>CSP Fall Calendar</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         
@@ -205,7 +205,7 @@
 <body>
     
     <div id="app">
-        <h1 style="text-align: center; margin-bottom: 0;">AP Computer Science A Spring Calendar</h1>
+        <h1 style="text-align: center; margin-bottom: 0;">AP Computer Science Principles Fall Calendar<a target="_blank" style="color: grey; text-decoration: none;" href="https://docs.google.com/spreadsheets/d/15al9u3tz7IeedV4rB9_XvA6X-SVdj9pDJzyLjqgjwjE/edit?gid=0#gid=0"> | Edit</a></h1>
         
         <div class="button-container">
             <button class="theme-toggle-btn" style="right: 20px" onclick="toggleDarkMode()">🌓</button>
@@ -221,7 +221,7 @@
     </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyrLpH6H8yF4UN6C-Dt52_eCaRolsjniMmelPQ_GwNJxpuhDpTcmSyBckdo8G3YLyax8Q/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzvo18eVc3DpiyIKG-ANsDdx-njCL6PDs504o93xQNsSHh0jRj8gGLteFy1fv9bUvma/exec';
     const UNIT_COLORS = [
         '#2563eb', // Blue
         '#059669', // Emerald
@@ -247,7 +247,7 @@
 
     // --- OPTIMIZED FETCH WITH CACHING ---
     async function fetchData() {
-        const cacheKey = 'spring_csa_calendar_data_cache';
+        const cacheKey = 'fall_principles_calendar_data_cache';
         const cachedData = localStorage.getItem(cacheKey);
     
         // 1. If we have cached data, render it immediately
